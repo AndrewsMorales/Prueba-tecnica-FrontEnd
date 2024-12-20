@@ -120,16 +120,16 @@ class CoctelController extends Controller
   {
     // Parámetros enviados por DataTables
     $draw = $request->input('draw');
-    $start = $request->input('start', 0);  // Índice de inicio para paginación
-    $length = $request->input('length', 10);  // Número de elementos por página
-    $search = $request->input('search.value', '');  // Término de búsqueda
+    $start = $request->input('start', 0);
+    $length = $request->input('length', 10);
+    $search = $request->input('search.value', '');
 
     // Obtener la información de la ordenación
     $orderColumnIndex = $request->input('order.0.column');
-    $orderDir = $request->input('order.0.dir', 'asc');  // Dirección de ordenación por defecto 'asc'
+    $orderDir = $request->input('order.0.dir', 'asc');
 
     // Nombres de las columnas en la base de datos
-    $columns = ['nombre', 'instrucciones', 'ingredientes', 'idCloud'];  // Ajusta estos nombres a tus columnas reales
+    $columns = ['nombre', 'instrucciones', 'ingredientes', 'idCloud'];
 
     // Lógica de consulta a la base de datos
     $query = Coctel::query();
@@ -145,8 +145,8 @@ class CoctelController extends Controller
     }
 
     // Aplicar ordenación
-    $orderColumn = $columns[$orderColumnIndex];  // Obtener el nombre de la columna a ordenar
-    $query->orderBy($orderColumn, $orderDir);  // Ordenar según la columna y dirección
+    $orderColumn = $columns[$orderColumnIndex];
+    $query->orderBy($orderColumn, $orderDir);
 
     // Contar el total de registros sin filtros
     $totalRecords = $query->count();
@@ -172,7 +172,7 @@ class CoctelController extends Controller
           $coctel->instrucciones,
           json_decode($coctel->ingredientes),
           $coctel->idCloud,
-          '<button class="btn btn-sm btn-primary my-2 saveLocalDrink" title="Editar localmente" data-id="' . $coctel->id . '"><i class="bi bi-pencil"></i></button>
+          '<button class="btn btn-sm btn-primary my-2 getCoctelId" title="Editar localmente" data-id="' . $coctel->id . '"><i class="bi bi-pencil"></i></button>
           <button class="btn btn-sm btn-danger my-2 deleteLocalDrink" title="Eliminar localmente" data-id="' . $coctel->id . '"><i class="bi bi-trash-fill"></i></button>',
         ];
       }),
@@ -181,95 +181,157 @@ class CoctelController extends Controller
     return response()->json($data);
   }
 
-
   /**
    * Guarda u actualiza de manera local la bebida seleccionada
    */
   public function saveUpdateDrink(Request $request)
   {
-    $ajson = [];
-    $dataIn = $request->all();
-    $dataSql = [];
-    if ($dataIn['isNube'] == 1) {
-      $ch = curl_init();
-      $url = 'https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=' . $dataIn['idDrink'];
-      curl_setopt($ch, CURLOPT_URL, $url);
-      curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-      curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-      $response = curl_exec($ch);
-      if (curl_errno($ch)) {
-        $ajson['status'] = 0;
-        $ajson['msg'] = 'Error:' . curl_error($ch);
+    try {
+      $ajson = [];
+      $dataIn = $request->all();
+      $dataSql = [];
+      if ($dataIn['isNube'] == 1) {
+        $ch = curl_init();
+        $url = 'https://www.thecocktaildb.com/api/json/v1/1/lookup.php?i=' . $dataIn['idDrink'];
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        $response = curl_exec($ch);
+        if (curl_errno($ch)) {
+          $ajson['status'] = 0;
+          $ajson['msg'] = 'Error:' . curl_error($ch);
+          return response()->json($ajson);
+        } else {
+          $response = json_decode($response);
+          if (isset($response->drinks) && is_array($response->drinks)) {
+            $response = $response->drinks[0];
+            $ingredientes = [];
+            for ($i = 1; $i <= 15; $i++) {
+              $texto = "strIngredient" . $i;
+              if (!empty($response->$texto)) {
+                $ingredientes[] = $response->$texto;
+              }
+            }
+            $dataSql['idDrink'] = $response->idDrink;
+            $dataSql['nombre'] = $response->strDrink;
+            $dataSql['urlImg'] = $response->strDrinkThumb;
+            $dataSql['instruciones'] = $response->strInstructionsES;
+            $dataSql['ingredientes'] = $ingredientes;
+          } else {
+            $ajson['status'] = 0;
+            $ajson['msg'] = "No fue posible encontrar el coctel seleccionado, vuelva a intentar más tarde.";
+            return response()->json($ajson);
+          }
+        }
+        curl_close($ch);
+      }
+      $coctel = Coctel::where('idCloud', $dataIn['idDrink'])->first();
+      if (!isset($dataIn['idLocal']) && !$coctel) {
+        $coctel = Coctel::create([
+          'nombre' => $dataSql['nombre'],
+          'instrucciones' => $dataSql['instruciones'],
+          'url_imagen' => $dataSql['urlImg'],
+          'ingredientes' => json_encode($dataSql['ingredientes']),
+          'idCloud' =>  $dataSql['idDrink'],
+        ]);
+        $ajson['status'] = 1;
+        $ajson['msg'] = "El coctel ha sido agredado correctamente.";
         return response()->json($ajson);
       } else {
-        $response = json_decode($response);
-        if (isset($response->drinks) && is_array($response->drinks)) {
-          $response = $response->drinks[0];
-          $ingredientes = [];
-          for ($i = 1; $i <= 15; $i++) {
-            $texto = "strIngredient" . $i;
-            if (!empty($response->$texto)) {
-              $ingredientes[] = $response->$texto;
-            }
-          }
-          $dataSql['idDrink'] = $response->idDrink;
-          $dataSql['nombre'] = $response->strDrink;
-          $dataSql['urlImg'] = $response->strDrinkThumb;
-          $dataSql['instruciones'] = $response->strInstructionsES;
-          $dataSql['ingredientes'] = $ingredientes;
+        if (!isset($dataIn['idLocal'])) {
+          $coctel = Coctel::where('idCloud', $dataIn['idDrink'])->first();
         } else {
+          $coctel = Coctel::find($dataIn['idLocal']);
+        }
+        if (!$coctel) {
           $ajson['status'] = 0;
-          $ajson['msg'] = "No fue posible encontrar el coctel seleccionado, vuelva a intentar más tarde.";
+          $ajson['msg'] = "El coctel a editar no existe.";
           return response()->json($ajson);
         }
-      }
-      curl_close($ch);
-    }
-    $coctel = Coctel::where('idCloud', $dataIn['idDrink'])->first();
+        if ($dataIn['isNube'] == 0) {
+          $dataSql['idDrink'] = $coctel->idCloud;
+          $dataSql['nombre'] = $dataIn['nombreIn'];
+          $dataSql['urlImg'] = $coctel->url_imagen;
+          $dataSql['instruciones'] = $dataIn['instruccionesIn'];
+          $dataSql['ingredientes'] = json_decode($coctel->ingredientes);
+        }
+        $coctel->update([
+          'nombre' => $dataSql['nombre'],
+          'instrucciones' => $dataSql['instruciones'],
+          'url_imagen' => $dataSql['urlImg'],
+          'ingredientes' => json_encode($dataSql['ingredientes']),
+          'idCloud' =>  $dataSql['idDrink'],
+        ]);
 
-
-    if (!isset($dataIn['idLocal']) && !$coctel) {
-      $coctel = Coctel::create([
-        'nombre' => $dataSql['nombre'],
-        'instrucciones' => $dataSql['instruciones'],
-        'url_imagen' => $dataSql['urlImg'],
-        'ingredientes' => json_encode($dataSql['ingredientes']),
-        'idCloud' =>  $dataSql['idDrink'],
-      ]);
-      $ajson['status'] = 1;
-      $ajson['msg'] = "El coctel ha sido agredado correctamente.";
-      return response()->json($ajson);
-    } else {
-      if (!isset($dataIn['idLocal'])) {
-        $coctel = Coctel::where('idCloud', $dataIn['idDrink'])->first();
-      } else {
-        $coctel = Coctel::find($dataIn['idLocal']);
-      }
-
-      if (!$coctel) {
-        $ajson['status'] = 0;
-        $ajson['msg'] = "El coctel a editar no existe.";
+        $ajson['status'] = 1;
+        $ajson['msg'] = "El coctel ha sido actualizado correctamente.";
         return response()->json($ajson);
       }
-      if ($dataIn['isNube'] == 0) {
-        $dataSql['idDrink'] = $dataIn['nombreIn'];
-        $dataSql['nombre'] = $dataIn['instruccionesIn'];
-        $dataSql['urlImg'] = $dataIn['url_imagenIn'];
-        $dataSql['instruciones'] = json_encode($dataIn['ingredientesIn']);
-        $dataSql['ingredientes'] = $dataIn['idCloudIn'];
-      }
-      // Actualizar los datos del cóctel existente
-      $coctel->update([
-        'nombre' => $dataSql['nombre'],
-        'instrucciones' => $dataSql['instruciones'],
-        'url_imagen' => $dataSql['urlImg'],
-        'ingredientes' => json_encode($dataSql['ingredientes']),
-        'idCloud' =>  $dataSql['idDrink'],
-      ]);
-
-      $ajson['status'] = 1;
-      $ajson['msg'] = "El coctel ha sido actualizado correctamente.";
+    } catch (\Exception $e) {
+      $ajson['status'] = 0;
+      $ajson['msg'] = "Error: " . $e->getMessage();
       return response()->json($ajson);
     }
+  }
+
+  /**
+   * Obtiene un Coctel por id
+   */
+  public function getCoctelId(Request $request)
+  {
+    try {
+      $ajson = [];
+      $dataIn = $request->all();
+      $coctel = Coctel::where('id', $dataIn['idLocal'])->first();
+      if (!$coctel) {
+        $ajson['status'] = 0;
+        $ajson['msg'] = 'El cóctel no existe o ya fue eliminado.';
+        return response()->json($ajson);
+      }
+      $ajson['status'] = 1;
+      $ajson['msg'] = "El coctel ha sido actualizado correctamente.";
+      $ajson['data'] = $coctel;
+      return response()->json($ajson);
+    } catch (\Exception $e) {
+      $ajson['status'] = 0;
+      $ajson['msg'] = "Error: " . $e->getMessage();
+      return response()->json($ajson);
+    }
+  }
+
+  /**
+   * Eliminina un coctel por id
+   */
+  public function deleteDrink(Request $request)
+  {
+    $ajson = [];
+    $idLocal = $request->input('idLocal');
+    // Buscar el cóctel por idLocal
+    if ($idLocal) {
+      $coctel = Coctel::find($idLocal);
+    } else {
+      $ajson['status'] = 0;
+      $ajson['msg'] = 'No se proporcionó un identificador válido.';
+      return response()->json($ajson);
+    }
+
+    // Verificar si el cóctel existe
+    if (!$coctel) {
+      $ajson['status'] = 0;
+      $ajson['msg'] = 'El cóctel no existe o ya fue eliminado.';
+      return response()->json($ajson);
+    }
+
+    // Eliminar el cóctel
+    try {
+      $coctel->delete();
+      $ajson['status'] = 1;
+      $ajson['msg'] = 'El cóctel ha sido eliminado correctamente.';
+    } catch (\Exception $e) {
+      $ajson['status'] = 0;
+      $ajson['msg'] = 'Error al eliminar el cóctel: ' . $e->getMessage();
+    }
+
+    return response()->json($ajson);
   }
 }

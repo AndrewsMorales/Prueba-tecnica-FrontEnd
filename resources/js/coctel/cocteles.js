@@ -1,5 +1,10 @@
+import 'bootstrap';
+const Toast = Swal.mixin({ toast: true, position: "top-end", showConfirmButton: false, timer: 4000, timerProgressBar: true, didOpen: (toast) => { toast.onmouseenter = Swal.stopTimer; toast.onmouseleave = Swal.resumeTimer; } });
+var tableLocal;
+var tableCloud;
+var modalSaveUpdateCoctel = new bootstrap.Modal(document.getElementById("modalSaveUpdateCoctel"));
 $(document).ready(function () {
-  var tableCloud = new DataTable('#cotelesCloud', {
+  tableCloud = new DataTable('#cotelesCloud', {
     ajax: {
       url: ApiRestUrl.getDataCoctelesCloud,
       type: 'POST',
@@ -30,7 +35,7 @@ $(document).ready(function () {
     ]
   });
 
-  var tableLocal = new DataTable('#cotelesLocal', {
+  tableLocal = new DataTable('#cotelesLocal', {
     ajax: {
       url: ApiRestUrl.getDataCoctelesLocal,
       type: 'POST',
@@ -71,24 +76,160 @@ $(document).ready(function () {
 
   $(document).on('click', '.saveNubeDrink', function (e) {
     let idDrink = $(this).data('id');
-    saveLocalDrink(idDrink);
+    saveDrink(idDrink, null, 1);
+  });
+  $(document).on('click', '#updateCoctelLocal', function (e) {
+    let idLocal = $(this).data('id');
+    let idDrink = $(this).data('idNube');
+    console.log(idLocal, idDrink);
+
+    saveDrink(idDrink, idLocal, 0);
+  });
+  $(document).on('click', '#updateCoctelNube', function (e) {
+    let idLocal = $(this).data('id');
+    let idDrink = $(this).data('idNube');;
+    saveDrink(idDrink, idLocal, 1);
+  });
+  $(document).on('click', '.getCoctelId', function (e) {
+    let idDrink = $(this).data('id');
+    getCoctelID(idDrink);
+  });
+  $(document).on('click', '.deleteLocalDrink', function (e) {
+    let idDrink = $(this).data('id');
+    deleteLocalDrink(idDrink);
   });
 });
-function saveLocalDrink(idDrink) {
+function saveDrink(idDrink, idLocal, nube) {
+  if (nube == 1) {
+    var datos = { 'idDrink': idDrink, 'isNube': 1 };
+  } else {
+    var datos = { 'idLocal': idLocal, 'idDrink': idDrink, 'isNube': 0, nombreIn: $('#modalSaveUpdateCoctel input#nombre').val(), instruccionesIn: $('#modalSaveUpdateCoctel textarea#instruciones').val() };
+  }
   $.ajax({
     type: "post",
     url: ApiRestUrl.saveUpdateDrink,
-    data: { 'idDrink': idDrink, 'isNube': 1 },
+    data: datos,
     dataType: "json",
     headers: {
       'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
     },
     success: function (response) {
-      console.log(response);
+      if (response.status === 1) {
+        Toast.fire({
+          icon: "success",
+          title: response.msg
+        });
+        tableLocal.ajax.reload(null, false);
+        modalSaveUpdateCoctel.hide();
+      } else {
+        // Alerta de error en la respuesta
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: response.msg
+        });
+      }
 
     },
     error: function (error) {
-      console.log(error);
+      // Alerta de error en la solicitud AJAX
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Hubo un problema al intentar eliminar el cóctel. Intenta nuevamente."
+      });
+      console.error(error);
     }
   });
 };
+function getCoctelID(idDrink) {
+  $.ajax({
+    type: "post",
+    url: ApiRestUrl.getCoctelId,
+    data: { 'idLocal': idDrink },
+    dataType: "json",
+    headers: {
+      'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    },
+    success: function (response) {
+      if (response.status === 1) {
+        $('#modalSaveUpdateCoctel input#nombre').val(response.data.nombre);
+        $('#modalSaveUpdateCoctel textarea#instruciones').val(response.data.instrucciones);
+        $('#modalSaveUpdateCoctel button#updateCoctelLocal').data('id', response.data.id);
+        $('#modalSaveUpdateCoctel button#updateCoctelNube').data('id', response.data.id);
+        $('#modalSaveUpdateCoctel button#updateCoctelLocal').data('idNube', response.data.idCloud);
+        $('#modalSaveUpdateCoctel button#updateCoctelNube').data('idNube', response.data.idCloud);
+        modalSaveUpdateCoctel.show();
+      } else {
+        // Alerta de error en la respuesta
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: response.msg
+        });
+      }
+    },
+    error: function (error) {
+      // Alerta de error en la solicitud AJAX
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Hubo un problema al intentar eliminar el cóctel. Intenta nuevamente."
+      });
+      console.error(error);
+    }
+  });
+};
+
+function deleteLocalDrink(idDrink) {
+  // Mostrar alerta de confirmación antes de eliminar
+  Swal.fire({
+    title: "¿Estás seguro?",
+    text: "Esta acción eliminará el cóctel. No podrás revertirla.",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar"
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Si se confirma, proceder con la eliminación
+      $.ajax({
+        type: "post",
+        url: ApiRestUrl.deleteDrink,
+        data: { 'idLocal': idDrink },
+        dataType: "json",
+        headers: {
+          'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        },
+        success: function (response) {
+          if (response.status === 1) {
+            Toast.fire({
+              icon: "success",
+              title: response.msg
+            });
+            tableLocal.ajax.reload(null, false);
+          } else {
+            // Alerta de error en la respuesta
+            Swal.fire({
+              icon: "error",
+              title: "Error",
+              text: response.msg
+            });
+          }
+        },
+        error: function (error) {
+          // Alerta de error en la solicitud AJAX
+          Swal.fire({
+            icon: "error",
+            title: "Error",
+            text: "Hubo un problema al intentar eliminar el cóctel. Intenta nuevamente."
+          });
+          console.error(error);
+        }
+      });
+    }
+  });
+}
+
