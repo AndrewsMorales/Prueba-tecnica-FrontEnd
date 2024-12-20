@@ -1,5 +1,5 @@
 $(document).ready(function () {
-  new DataTable('#cotelesCloud', {
+  var tableCloud = new DataTable('#cotelesCloud', {
     ajax: {
       url: ApiRestUrl.getDataCoctelesCloud,
       type: 'POST',
@@ -9,25 +9,28 @@ $(document).ready(function () {
         });
       },
       error: function (xhr, error, thrown) {
-        // Manejo de errores si es necesario
         console.error('Error al cargar los datos:', error);
-        // Puedes mostrar un mensaje de error si lo deseas
       }
     },
     language: {
       url: 'https://cdn.datatables.net/plug-ins/1.11.5/i18n/es-ES.json',
-      emptyTable: 'No hay datos disponibles', // Texto cuando no haya datos
-      zeroRecords: 'No se encontraron registros', // Texto cuando no se encuentren registros coincidentes
+      emptyTable: 'No hay datos disponibles',
+      zeroRecords: 'No se encontraron registros'
     },
     responsive: true,
     autoWidth: false,
     pageLength: 10,
     lengthMenu: [10, 25, 50, 75, 100],
     pagingType: 'simple_numbers',
+    columnDefs: [
+      {
+        targets: -1,
+        orderable: false
+      }
+    ]
   });
 
-
-  new DataTable('#cotelesLocal', {
+  var tableLocal = new DataTable('#cotelesLocal', {
     ajax: {
       url: ApiRestUrl.getDataCoctelesLocal,
       type: 'POST',
@@ -47,9 +50,26 @@ $(document).ready(function () {
     pageLength: 10,
     lengthMenu: [10, 25, 50, 75, 100],
     pagingType: 'simple_numbers',
+    columnDefs: [
+      {
+        targets: [0, 4, -1], // Índices de las columnas donde se desactiva el orden
+        orderable: false
+      }
+    ]
   });
 
-  $(document).on('click', '.saveLocalDrink', function (e) {
+  // Manejo del cambio de pestañas
+  $('.clickLink').on('click', function (e) {
+    var target = $(this).attr('id');
+    if (target == 'coctelCloud-tab') {
+      //tableCloud.ajax.reload(null, false); 
+    } else if (target == 'coctelLocal-tab') {
+      tableLocal.ajax.reload(null, false);
+    }
+  });
+
+
+  $(document).on('click', '.saveNubeDrink', function (e) {
     let idDrink = $(this).data('id');
     saveLocalDrink(idDrink);
   });

@@ -4,12 +4,12 @@
   <div class="px-3">
     <ul class="nav nav-tabs nav-pills justify-content-center border-0" id="myTab" role="tablist">
       <li class="nav-item mx-2" role="presentation">
-        <button class="nav-link fw-bolder active" id="coctelCloud-tab" data-bs-toggle="tab" data-bs-target="#coctelCloud-tab-pane" type="button" role="tab" aria-controls="coctelCloud-tab-pane" aria-selected="true">
+        <button class="nav-link clickLink fw-bolder active" id="coctelCloud-tab" data-bs-toggle="tab" data-bs-target="#coctelCloud-tab-pane" type="button" role="tab" aria-controls="coctelCloud-tab-pane" aria-selected="true">
           En la Nube
         </button>
       </li>
       <li class="nav-item mx-2" role="presentation">
-        <button class="nav-link fw-bolder" id="coctelLocal-tab" data-bs-toggle="tab" data-bs-target="#coctelLocal-tab-pane" type="button" role="tab" aria-controls="coctelLocal-tab-pane" aria-selected="false">
+        <button class="nav-link clickLink fw-bolder" id="coctelLocal-tab" data-bs-toggle="tab" data-bs-target="#coctelLocal-tab-pane" type="button" role="tab" aria-controls="coctelLocal-tab-pane" aria-selected="false">
           Localmente
         </button>
       </li>
@@ -38,12 +38,12 @@
             <table id="cotelesLocal" class="table tableCoctel">
               <thead>
                 <tr>
-                  <th>First name</th>
-                  <th>Last name</th>
-                  <th>Position</th>
-                  <th>Office</th>
-                  <th>Start date</th>
-                  <th>Salary</th>
+                  <th>Imagen</th>
+                  <th>Nombre</th>
+                  <th>Instrucciones</th>
+                  <th>Ingredientes</th>
+                  <th>Id Nube</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
             </table>

@@ -95,7 +95,7 @@ class CoctelController extends Controller
                 $responseDetail->strDrink,
                 $responseDetail->strInstructionsES,
                 $ingredientes,
-                '<button class="btn btn-sm btn-success saveLocalDrink" title="Guardar localmente" data-id="' . $responseDetail->idDrink . '"><i class="bi bi-floppy-fill"></i></button>',
+                '<button class="btn btn-sm btn-success saveNubeDrink" title="Guardar localmente" data-id="' . $responseDetail->idDrink . '"><i class="bi bi-floppy-fill"></i></button>',
               ];
             } else {
               continue;
@@ -118,96 +118,69 @@ class CoctelController extends Controller
    */
   public function getDataCoctelesLocal(Request $request)
   {
+    // Parámetros enviados por DataTables
+    $draw = $request->input('draw');
+    $start = $request->input('start', 0);  // Índice de inicio para paginación
+    $length = $request->input('length', 10);  // Número de elementos por página
+    $search = $request->input('search.value', '');  // Término de búsqueda
+
+    // Obtener la información de la ordenación
+    $orderColumnIndex = $request->input('order.0.column');
+    $orderDir = $request->input('order.0.dir', 'asc');  // Dirección de ordenación por defecto 'asc'
+
+    // Nombres de las columnas en la base de datos
+    $columns = ['nombre', 'instrucciones', 'ingredientes', 'idCloud'];  // Ajusta estos nombres a tus columnas reales
+
+    // Lógica de consulta a la base de datos
+    $query = Coctel::query();
+
+    // Si hay término de búsqueda, se filtra
+    if ($search) {
+      $query->where(function ($query) use ($search) {
+        $query->where('nombre', 'like', '%' . $search . '%')
+          ->orWhere('instrucciones', 'like', '%' . $search . '%')
+          ->orWhere('ingredientes', 'like', '%' . $search . '%')
+          ->orWhere('idCloud', 'like', '%' . $search . '%');
+      });
+    }
+
+    // Aplicar ordenación
+    $orderColumn = $columns[$orderColumnIndex];  // Obtener el nombre de la columna a ordenar
+    $query->orderBy($orderColumn, $orderDir);  // Ordenar según la columna y dirección
+
+    // Contar el total de registros sin filtros
+    $totalRecords = $query->count();
+
+    // Aplicar paginación
+    $cocteles = $query->skip($start)
+      ->take($length)
+      ->get();
+
+    // Contar el total de registros después del filtro de búsqueda
+    $filteredRecords = $query->count();
+
+    // Formato de la respuesta para DataTables
     $data = [
-      "draw" => 1,
-      "recordsTotal" => 57,
-      "recordsFiltered" => 57,
-      "data" => [
-        [
-          "Airi",
-          "Satou",
-          "Accountant",
-          "Tokyo",
-          "28th Nov 08",
-          "$162,700",
-        ],
-        [
-          "Angelica",
-          "Ramos",
-          "Chief Executive Officer (CEO)",
-          "London",
-          "9th Oct 09",
-          "$1,200,000",
-        ],
-        [
-          "Ashton",
-          "Cox",
-          "Junior Technical Author",
-          "San Francisco",
-          "12th Jan 09",
-          "$86,000",
-        ],
-        [
-          "Bradley",
-          "Greer",
-          "Software Engineer",
-          "London",
-          "13th Oct 12",
-          "$132,000",
-        ],
-        [
-          "Brenden",
-          "Wagner",
-          "Software Engineer",
-          "San Francisco",
-          "7th Jun 11",
-          "$206,850",
-        ],
-        [
-          "Brielle",
-          "Williamson",
-          "Integration Specialist",
-          "New York",
-          "2nd Dec 12",
-          "$372,000",
-        ],
-        [
-          "Bruno",
-          "Nash",
-          "Software Engineer",
-          "London",
-          "3rd May 11",
-          "$163,500",
-        ],
-        [
-          "Caesar",
-          "Vance",
-          "Pre-Sales Support",
-          "New York",
-          "12th Dec 11",
-          "$106,450",
-        ],
-        [
-          "Cara",
-          "Stevens",
-          "Sales Assistant",
-          "New York",
-          "6th Dec 11",
-          "$145,600",
-        ],
-        [
-          "Cedric",
-          "Kelly",
-          "Senior Javascript Developer",
-          "Edinburgh",
-          "29th Mar 12",
-          "$433,060",
-        ],
-      ],
+      "draw" => $draw,
+      "recordsTotal" => $totalRecords,
+      "recordsFiltered" => $filteredRecords,
+      "data" => $cocteles->map(function ($coctel) {
+
+        return [
+          '<img src="' . $coctel->url_imagen . '" alt="Girl in a jacket" width="100" height="100">',
+          $coctel->nombre,
+          $coctel->instrucciones,
+          json_decode($coctel->ingredientes),
+          $coctel->idCloud,
+          '<button class="btn btn-sm btn-primary my-2 saveLocalDrink" title="Editar localmente" data-id="' . $coctel->id . '"><i class="bi bi-pencil"></i></button>
+          <button class="btn btn-sm btn-danger my-2 deleteLocalDrink" title="Eliminar localmente" data-id="' . $coctel->id . '"><i class="bi bi-trash-fill"></i></button>',
+        ];
+      }),
     ];
 
     return response()->json($data);
   }
+
 
   /**
    * Guarda u actualiza de manera local la bebida seleccionada
@@ -252,7 +225,10 @@ class CoctelController extends Controller
       }
       curl_close($ch);
     }
-    if (!isset($dataIn['idLocal'])) {
+    $coctel = Coctel::where('idCloud', $dataIn['idDrink'])->first();
+
+
+    if (!isset($dataIn['idLocal']) && !$coctel) {
       $coctel = Coctel::create([
         'nombre' => $dataSql['nombre'],
         'instrucciones' => $dataSql['instruciones'],
@@ -264,8 +240,11 @@ class CoctelController extends Controller
       $ajson['msg'] = "El coctel ha sido agredado correctamente.";
       return response()->json($ajson);
     } else {
-
-      $coctel = Coctel::find($dataIn['idLocal']);
+      if (!isset($dataIn['idLocal'])) {
+        $coctel = Coctel::where('idCloud', $dataIn['idDrink'])->first();
+      } else {
+        $coctel = Coctel::find($dataIn['idLocal']);
+      }
 
       if (!$coctel) {
         $ajson['status'] = 0;
