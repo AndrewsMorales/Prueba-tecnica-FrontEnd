@@ -1,7 +1,7 @@
 
 # Prueba Técnica - Proyecto de Cocteles
 
-Este proyecto fue desarrollado como parte de una prueba técnica para un puesto de trabajo. En este proyecto, se consume una API externa para obtener datos relacionados con cocteles. El sistema está desarrollado en **Laravel** y utiliza varias librerías como **DataTables**, **Bootstrap**, **jQuery** y **SweetAlert**.
+Este proyecto fue desarrollado como parte de una prueba técnica para un puesto de trabajo. En este proyecto, se consume una API externa para obtener datos relacionados con cocteles. El sistema está desarrollado en **Laravel**, **Laravel Brezze** y utiliza varias librerías como **DataTables**, **Bootstrap**, **jQuery** y **SweetAlert**.
 
 ## Características del Proyecto
 
