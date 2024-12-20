@@ -56,7 +56,7 @@
     var ApiRestUrl = [];
     ApiRestUrl['getDataCoctelesCloud'] = "{{ route('coctel.getDataCoctelesCloud') }}";
     ApiRestUrl['getDataCoctelesLocal'] = "{{ route('coctel.getDataCoctelesLocal') }}";
-    ApiRestUrl['getDataCoctelesLocal'] = "{{ route('coctel.saveUpdateDrink') }}";
+    ApiRestUrl['saveUpdateDrink'] = "{{ route('coctel.saveUpdateDrink') }}";
   </script>
   @vite(['resources/js/coctel/cocteles.js'])
 </x-app-layout>

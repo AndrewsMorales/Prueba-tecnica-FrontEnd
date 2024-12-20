@@ -55,5 +55,20 @@ $(document).ready(function () {
   });
 });
 function saveLocalDrink(idDrink) {
+  $.ajax({
+    type: "post",
+    url: ApiRestUrl.saveUpdateDrink,
+    data: { 'idDrink': idDrink, 'isNube': 1 },
+    dataType: "json",
+    headers: {
+      'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+    },
+    success: function (response) {
+      console.log(response);
 
+    },
+    error: function (error) {
+      console.log(error);
+    }
+  });
 };
