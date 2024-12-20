@@ -1,17 +1,62 @@
 <x-app-layout>
-  <x-slot name="header">
-    <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
-      Cocteles
-    </h2>
-  </x-slot>
+  @vite(['resources/css/coctel/cocteles.css'])
 
-  <div class="py-12">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-      <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm sm:rounded-lg">
-        <div class="p-6 text-gray-900 dark:text-gray-100 text-lg">
-          Esta es una página diseñada especialmente para los amantes de los cócteles. Aquí podrás explorar una amplia variedad de recetas, desde los clásicos hasta los más innovadores. Cada cóctel incluye una descripción detallada de los ingredientes necesarios y un paso a paso para su preparación, asegurando que puedas recrearlos con facilidad en casa. Descubre nuevas combinaciones, aprende técnicas de preparación y disfruta del fascinante mundo de la mixología. ¡Perfecta para sorprender a tus invitados!
+  <div class="px-3">
+    <ul class="nav nav-tabs nav-pills justify-content-center border-0" id="myTab" role="tablist">
+      <li class="nav-item mx-2" role="presentation">
+        <button class="nav-link fw-bolder active" id="coctelCloud-tab" data-bs-toggle="tab" data-bs-target="#coctelCloud-tab-pane" type="button" role="tab" aria-controls="coctelCloud-tab-pane" aria-selected="true">
+          En la Nube
+        </button>
+      </li>
+      <li class="nav-item mx-2" role="presentation">
+        <button class="nav-link fw-bolder" id="coctelLocal-tab" data-bs-toggle="tab" data-bs-target="#coctelLocal-tab-pane" type="button" role="tab" aria-controls="coctelLocal-tab-pane" aria-selected="false">
+          Localmente
+        </button>
+      </li>
+    </ul>
+    <div class="tab-content mt-3" id="myTabContent">
+      <div class="tab-pane fade show active" id="coctelCloud-tab-pane" role="tabpanel" aria-labelledby="coctelCloud-tab" tabindex="0">
+        <div class="card">
+          <div class="card-body">
+            <table id="cotelesCloud" class="table tableCoctel">
+              <thead>
+                <tr>
+                  <th>ID Drink</th>
+                  <th>Nombre</th>
+                  <th>Instrucciones</th>
+                  <th>Ingredientes</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="tab-pane fade" id="coctelLocal-tab-pane" role="tabpanel" aria-labelledby="coctelLocal-tab" tabindex="0">
+        <div class="card">
+          <div class="card-body">
+            <table id="cotelesLocal" class="table tableCoctel">
+              <thead>
+                <tr>
+                  <th>First name</th>
+                  <th>Last name</th>
+                  <th>Position</th>
+                  <th>Office</th>
+                  <th>Start date</th>
+                  <th>Salary</th>
+                </tr>
+              </thead>
+            </table>
+          </div>
         </div>
       </div>
     </div>
   </div>
+  <script>
+    var ApiRestUrl = [];
+    ApiRestUrl['getDataCoctelesCloud'] = "{{ route('coctel.getDataCoctelesCloud') }}";
+    ApiRestUrl['getDataCoctelesLocal'] = "{{ route('coctel.getDataCoctelesLocal') }}";
+    ApiRestUrl['getDataCoctelesLocal'] = "{{ route('coctel.saveUpdateDrink') }}";
+  </script>
+  @vite(['resources/js/coctel/cocteles.js'])
 </x-app-layout>
